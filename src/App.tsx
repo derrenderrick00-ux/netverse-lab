@@ -9,12 +9,16 @@ import type {IncidentId} from './labs/scenarios';
 import {lessons, moduleTitles, steps} from './learning/content';
 import {exportJson, importJson, loadProgress, loadProject, saveProgress, saveProject} from './utils/storage';
 import type {Progress} from './utils/storage';
+import {PerformanceLab,InfrastructureLab,SecurityLab,AdvancedLab} from './features/Labs';
+import {PatchPanel,ModeSwitch} from './features/PatchPanel';
+import type {LabMode} from './features/patch';
 import './App.css';
 
-type Section = 'Dashboard' | 'Learn' | 'Build' | 'Troubleshoot' | 'Packet inspector' | 'Projects';
+type Section = 'Dashboard' | 'Learn' | 'Build' | 'Troubleshoot' | 'Packet inspector' | 'Performance' | 'Infrastructure' | 'Security' | 'Advanced' | 'Projects';
 const sections: {id: Section; icon: string}[] = [
   {id:'Dashboard',icon:'◈'}, {id:'Learn',icon:'▤'}, {id:'Build',icon:'⌘'},
-  {id:'Troubleshoot',icon:'⚑'}, {id:'Packet inspector',icon:'◉'}, {id:'Projects',icon:'▣'},
+  {id:'Troubleshoot',icon:'⚑'}, {id:'Packet inspector',icon:'◉'},
+  {id:'Performance',icon:'◷'}, {id:'Infrastructure',icon:'♧'}, {id:'Security',icon:'⬡'}, {id:'Advanced',icon:'◈'}, {id:'Projects',icon:'▣'},
 ];
 const deviceIcon: Record<DeviceKind, string> = {host:'▣',server:'▥',router:'◎',switch:'▦'};
 const eventColors: Record<string, string> = {'dropped':'bad','delivered':'good','arp-request':'warn','arp-reply':'good','forward':'info','notice':'muted','frame':'info','icmp-request':'info','icmp-reply':'good'};
@@ -97,6 +101,11 @@ function downloadText(name: string, content: string) {
 
 export default function App() {
   const [section,setSection]=useState<Section>('Dashboard');
+  const [mode,setMode]=useState<LabMode>(()=>{try{return localStorage.getItem('netverse.lab.mode')==='independent'?'independent':'guided';}catch{return 'guided';}});
+  const [patchOpen,setPatchOpen]=useState(false);
+  const [patchHints,setPatchHints]=useState(0);
+  function switchMode(next:LabMode){setMode(next);try{localStorage.setItem('netverse.lab.mode',next);}catch{/* Browser storage unavailable */}}
+
   const [project,setProject]=useState<NetworkProject>(loadProject);
   const [selected,setSelected]=useState('pc-a');
   const [progress,setProgress]=useState<Progress>(loadProgress);
@@ -128,7 +137,7 @@ export default function App() {
   function updateProject(p:NetworkProject) {setProject(p);setVerified(false);setLastPing(null);}
   function applyResult(result:{ok:boolean;state:NetworkProject;error?:string}) {if(result.ok){updateProject(result.state);setNotice('Network state updated. Re-run a test to verify.');}else setNotice(result.error||'Action rejected.');}
   function loadProjectInto(p:NetworkProject) {setProject(p);setSelected(p.devices[0]?.id||'');setSourceId(p.devices.find(d=>d.kind!=='switch')?.id||'');setLastPing(null);setTerminalHistory(['New virtual network loaded. Type help.']);setVerified(false);setSawFailure(false);setNotes('');setHypothesis('');setNotice(`Loaded: ${p.name}`);}
-  function launchCase(id:IncidentId){loadProjectInto(loadIncident(id));setActiveIncident(id);setShowHint(false);setCommand('');setSection('Troubleshoot');}
+  function launchCase(id:IncidentId){loadProjectInto(loadIncident(id));setActiveIncident(id);setShowHint(false);setPatchHints(0);setCommand('');setSection('Troubleshoot');}
   function enterCommand(e:FormEvent) {
     e.preventDefault();if(!command.trim()||!currentSource)return;
     const res=executeCommand(project,currentSource,command,lastPing);
@@ -151,10 +160,13 @@ export default function App() {
   return <div className="app-shell">
     <aside className="sidebar"><div className="brand"><span className="brand-icon">◎</span><div><strong>NETVERSE</strong><small>NETWORKING LAB</small></div></div>
       <div className="sidebar-caption">WORKSPACE</div><nav aria-label="Main navigation">{sections.map(s=><button key={s.id} className={`nav-link ${section===s.id?'selected':''}`} onClick={()=>setSection(s.id)}><span aria-hidden="true">{s.icon}</span>{s.id}</button>)}</nav>
-      <div className="sidebar-bottom"><span className="badge good">● Local simulation</span><p>Phases 1–8 · prototype<br/>F0/F1 selective fidelity</p></div>
+      <div className="sidebar-bottom"><span className="badge good">● Local simulation</span><p>Phases 1–12 · extended prototype<br/>F0/F1 selective fidelity</p></div>
     </aside>
-    <div className="main-area"><header className="topbar"><div><span className="eyebrow">NETVERSE / {section.toUpperCase()}</span><h1>{section}</h1></div><div className="topbar-right"><span className="badge">{connectivity.devices} nodes · {connectivity.links} active links</span><button className="secondary" onClick={()=>setSection('Projects')}>Save / export ↗</button></div></header>
+    <div className="main-area"><header className="topbar"><div><span className="eyebrow">NETVERSE / {section.toUpperCase()}</span><h1>{section}</h1></div><div className="topbar-right"><ModeSwitch mode={mode} onMode={switchMode}/><button className="secondary" onClick={()=>setPatchOpen(v=>!v)} aria-expanded={patchOpen} aria-controls="patch-area">🛟 Patch — help</button><span className="badge">{connectivity.devices} nodes · {connectivity.links} active links</span><button className="secondary" onClick={()=>setSection('Projects')}>Save / export ↗</button></div></header>
+      <div id="patch-area">{patchOpen&&<PatchPanel key={`${section}-${activeIncident||'none'}`} context={{section,project,incident:activeIncident,lastPing,mode,hintLevel:patchHints}} onClose={()=>setPatchOpen(false)}/>}</div>
       <main className="main-content">
+      {mode==='guided' && ['Build','Troubleshoot'].includes(section) && <section className="guided-banner" aria-label="Guided learning steps"><strong>🧭 Guided learning</strong><p>{section==='Build'?'1. Add or select devices. 2. Connect Ethernet interfaces. 3. Confirm IPv4 addresses. 4. Run ping. 5. Break and repair the link.':'1. Read the ticket. 2. Run a baseline ping and inspect addressing. 3. Record evidence. 4. Repair in Build. 5. Ping again and submit.'}</p><button className="secondary small" onClick={()=>setPatchOpen(true)}>Ask Patch for this step</button></section>}
+
       {notice && <div className="notification" role="status"><span>{notice}</span><button aria-label="Dismiss notice" onClick={()=>setNotice('')}>×</button></div>}
       {section==='Dashboard' && <>
         <div className="hero"><div><span className="eyebrow">YOUR VIRTUAL NETWORK ENGINEERING WORKSPACE</span><h2>Learn the theory.<br/><em>Make packets move.</em></h2><p>Build real configurations in an isolated model, investigate broken networks, and verify the result with virtual commands—not scripted animations.</p><div className="button-row"><button onClick={()=>setSection('Learn')}>Continue learning →</button><button className="secondary" onClick={()=>setSection('Build')}>Open lab</button></div></div><div className="hero-art" aria-hidden="true"><span>▣</span><i>──────────</i><span>◎</span><i>──────────</i><span>▥</span><small>CLIENT　　　　 ROUTER　　　　 SERVER</small></div></div>
@@ -183,12 +195,16 @@ export default function App() {
         <h2 className="section-title">Incident tickets</h2><p className="small-muted">Starting an incident replaces the active workspace. Export your current project first if you want to preserve a separate copy.</p>
         <div className="incident-cards">{incidents.map(c=><button key={c.id} className={`incident-card ${activeIncident===c.id?'selected':''}`} onClick={()=>launchCase(c.id)}><span className="eyebrow">CASE {c.id.toUpperCase()}</span><strong>{c.title}</strong><small>{c.ticket}</small><em>Load investigation →</em></button>)}</div>
         {incident?<div className="incident-work"><div><section className="card"><div className="panel-heading"><h3>⚑ {incident.title}</h3><span className="badge">ACTIVE</span></div><p>{incident.ticket}</p><p className="learning-prompt">Test target: <code>{incident.targetIp}</code> · Source: <code>{incident.sourceId}</code></p><Topology project={project} selected={selected} onSelect={id=>{setSelected(id);setSourceId(id);}}/>
-            <div className="button-row"><button className="secondary" onClick={()=>setShowHint(v=>!v)}>{showHint?'Hide hint':'Request hint'}</button><button className="secondary" onClick={()=>{setSection('Build');setNotice('Repair the actual topology or interface settings; then re-test the incident.');}}>Open configuration workbench →</button></div>{showHint&&<p className="learning-prompt">{incident.hint}</p>}</section>{renderTerminal()}</div>
+            <div className="button-row"><button className="secondary" onClick={()=>{setShowHint(v=>!v);setPatchHints(v=>v+1);}}>{showHint?'Hide hint':mode==='guided'?'Show case hint':'Request optional hint'}</button><button className="secondary" onClick={()=>{setSection('Build');setNotice('Repair the actual topology or interface settings; then re-test the incident.');}}>Open configuration workbench →</button></div>{showHint&&<p className="learning-prompt">{incident.hint}</p>}</section>{renderTerminal()}</div>
           <div><section className="card"><h3>Investigation notebook</h3><p className="small-muted">Record what you observed before submitting. No prescribed command order.</p><label>Evidence<textarea rows={4} value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Which tests failed and why is that meaningful?"/></label><label>Diagnosis and repair explanation<textarea rows={4} value={hypothesis} onChange={e=>setHypothesis(e.target.value)} placeholder="What was wrong, what did you change, and how did you verify it?"/></label><div className="scorebox"><span>Assessment score</span><strong>{assessment.score}/100</strong><small>{assessment.passed?'PASS · all criteria met':'Submit evidence and verify connectivity'}</small></div><div className="rubric">{assessment.breakdown.map(s=><p key={s}>{s}</p>)}</div><div className="button-row"><button className="secondary" onClick={()=>{setCommand(`ping -c 2 ${incident.targetIp}`);setSourceId(incident.sourceId);}}>Prepare verification ping</button><button onClick={()=>{setNotice(assessment.passed?`Ticket resolved. Root-cause teaching note: ${incident.correctExplanation}`:'Ticket incomplete. Verify a failed test, repair the actual network, ping again, and write evidence.');}}>Submit diagnosis</button></div></section></div>
         </div>:<div className="empty-state"><h3>Select a ticket to begin</h3><p>Each case loads an actual misconfigured topology. Testing, repair and assessment use the same simulation state.</p></div>}
       </>}
-      {section==='Packet inspector' && <PacketInspector key={traceId} result={lastPing}/>}
+      {section==='Packet inspector' && <PacketInspector key={traceId} result={lastPing}/>} 
+      {section==='Performance' && <PerformanceLab/>}
+      {section==='Infrastructure' && <InfrastructureLab/>}
+      {section==='Security' && <SecurityLab/>}
+      {section==='Advanced' && <AdvancedLab/>}
       {section==='Projects' && <div className="projects-grid"><section className="card"><h3>Save, export, and import</h3><p>Progress and your current topology are saved automatically in this browser's local storage. Export JSON to make a portable backup.</p><label>Project title<input value={project.name} onChange={e=>updateProject({...project,name:e.target.value.slice(0,100)})}/></label><div className="button-row"><button onClick={()=>{setNotice(saveProject(project)?'Project saved locally.':'Browser storage denied or full. Use Export JSON instead.');}}>Save now</button><button className="secondary" onClick={()=>downloadText('netverse-project.json',exportJson(project))}>Export JSON ↓</button></div><label>Import NETVERSE JSON<input type="file" accept=".json,application/json" onChange={async e=>{const f=e.target.files?.[0];if(!f)return;if(f.size>250_000){setNotice('File too large (maximum 250 KB).');return;}try{loadProjectInto(importJson(await f.text()));setActiveIncident(null);}catch(err){setNotice(err instanceof Error?err.message:'Import failed.');}e.target.value='';}}/></label><p className="small-muted">Import validates schema v1, device IDs, port IDs and cable endpoints. It does not execute scripts.</p></section><section className="card"><h3>Saved workspace</h3><dl className="meta"><dt>Project</dt><dd>{project.name}</dd><dt>Devices</dt><dd>{project.devices.length}</dd><dt>Cables</dt><dd>{project.links.length}</dd><dt>Learning progress</dt><dd>{finished}/{lessons.length} lessons</dd><dt>Engine</dt><dd>Discrete-event IPv4 / ARP / ICMP (limited)</dd></dl><button className="danger" onClick={()=>{loadProjectInto(emptyProject());setActiveIncident(null);setSection('Build');}}>Start an empty network</button></section></div>}
-      </main><footer className="footer">NETVERSE LAB · Educational simulation (not real Linux or real Internet traffic) · Phases 1–8 working slice</footer></div>
+      </main><footer className="footer">NETVERSE LAB · Local educational simulation · Limited model fidelity; see Engineering Fidelity documentation</footer></div>
   </div>;
 }

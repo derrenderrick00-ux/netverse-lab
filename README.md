@@ -1,56 +1,77 @@
-# NETVERSE LAB — Networking learning, simulation and investigation
+# 🌐 NETVERSE LAB
 
-**Release:** Phases 1–8 engineering prototype (not a production networking emulator).
+**Local-first networking education • virtual packet simulation • practical troubleshooting**
 
-NETVERSE is a local-first React + TypeScript learning laboratory. Learners study networking with the nine-step method, create network topologies, configure IPv4 interfaces, run an allow-listed **virtual** terminal, investigate three faults and step through packet events.
+NETVERSE LAB helps beginners turn networking theory into practical experiments. Learn concepts, connect virtual devices, configure IPv4, inspect ARP/ICMP events, investigate outages, and explore conceptual experiments for shared bandwidth, physical Internet infrastructure, firewall policy, VLANs, TCP handshakes and IPv6 prefixes.
 
-## What is implemented
+> **Release status:** Extended **educational prototype** (Phases 1–14). The owner verified the application on Ubuntu on 27 October 2026: Oxlint **0 warnings / 0 errors**, Vite production build **passed**, and Vitest **62/62 tests passed**. This is **not** a production-grade networking emulator or complete 14-module course.
 
-- Dashboard and responsive navigation (Phase 1).
-- Three complete Module 01 lessons using the nine-step method; additional 13 modules are curriculum placeholders (Phase 2).
-- Accessible 2D topology canvas, four basic device models, per-port cable setup, save/import/export (Phase 3).
-- Headless state-based IPv4, ARP, ICMP, virtual links, simplified Ethernet switch transit and deterministic event clock (Phase 4).
-- Per-interface addressing, subnet masks, interface on/off, default gateway and two-network router (Phase 5).
-- Strict allow-listed virtual terminal: `help`, `clear`, `ip addr`, `ip link`, `ip route`, `ip neigh`, `arp -a`, `ping`, simplified `traceroute` (Phase 6 and early Phase 8).
-- Incident tickets for broken cable, wrong subnet and missing gateway; evidence notes, independent test order, criteria-based grading (Phase 7).
-- Packet event timeline, inspector and deterministic replay of stored events; simplified switch traversal (Phase 8).
+## Installation — clone from GitHub
 
-## Quickstart on the user's existing Phase-0 Vite project
-
-This release is an **overlay**, not a new npm project. Extract the contents at the existing `~/Documents/netverse-lab` root. It intentionally preserves the installed `package.json`, `package-lock.json`, `.oxlintrc.json` and `node_modules`.
+After publication, choose **Code → HTTPS** on the GitHub repository and copy its actual clone URL. Replace the URL below if published under a different repository name:
 
 ```bash
-cd ~/Documents/netverse-lab
+cd ~/Documents
+git clone https://github.com/derrenderrick00-ux/netverse-lab.git
+cd netverse-lab
+npm ci
 npm run lint
 npm run build
 npm test
 npm run dev -- --host 127.0.0.1
 ```
 
-Then open `http://127.0.0.1:5173/`. See `docs/UBUNTU_INSTALL_AND_VERIFY.md` for safe step-by-step installation, Phase 0 completion, expected outputs, and manual tests.
+Open the local URL Vite prints (normally **http://127.0.0.1:5173/**). Press **Ctrl+C** to stop. Requires Node.js/npm compatible with the committed Vite toolchain and Git; first clone/dependency installation requires Internet access. Verified on Node.js **v24.21.0** and npm **11.19.0**. After installation the browser educational labs can run locally without external services.
 
-## First lab: Two Computers, Make Them Talk
+**Already developing locally?** Do not run `npm create vite` again; use your existing repository.
 
-1. Open **Build**. The starter network has PC-A = `192.168.1.10/24` and PC-B = `192.168.1.20/24` but no cable.
-2. In the **Patch panel**, connect `PC-A · eth0` to `PC-B · eth0`.
-3. Select PC-A as the terminal device; run `ping -c 2 192.168.1.20`. Expect `2 packets transmitted, 2 received`.
-4. Select **Packet inspector** to see ARP and ICMP events and step/replay.
-5. Return to Build and choose **Disable** on the cable. Run ping again: `0 received`.
-6. Re-enable the cable; test again.
+## What can a learner do?
 
-## Technical limitations (explicit, not hidden)
+| Area | Capability |
+|---|---|
+| Learn | Three introductory lessons with nine-step study flow; 13 more modules planned |
+| Build | Place host, router, server or switch; configure IPv4 and Ethernet links |
+| Troubleshoot | Broken cable, wrong subnet and missing gateway scenarios |
+| Terminal | Safe simulated `ip`, `ping`, `traceroute`, `arp` subset (not a Linux shell) |
+| Packet inspector | Trace ARP and ICMP events from the network engine |
+| Guided / Independent | Opt-in instructional guidance or self-directed learning |
+| 🛟 Patch | Offline rules-based, read-only teaching assistant |
+| Performance | Single-bottleneck max-min fair-sharing calculation |
+| Infrastructure | Illustrated fibre/ISP/cellular equipment catalogue |
+| Security | Isolated first-match firewall rule experiment |
+| Advanced | Separate VLAN membership, TCP handshake and IPv6 prefix exercises |
+| Projects | Browser autosave plus topology JSON import/export (schema v1) |
+| Optional Linux | Separate opt-in temporary Linux network namespaces lab |
 
-- This is an **educational simulation**, not Cisco Packet Tracer, GNS3, a real shell, or a real network stack. Commands never access the computer's OS, network devices or Internet.
-- IPv4 supports connected routes and **one default gateway** per endpoint. It does not yet support user-defined static routing tables, full dynamic routing, VLANs or IPv6.
-- Ethernet switch behavior is simplified: the virtual link path and switch transit are simulated, while complete unknown-unicast flooding, MAC aging, full ARP broadcast propagation and loop prevention are deferred. Do not use it as protocol conformance evidence.
-- `traceroute` is a simplified description of a simulated ping path; it is not a TTL-probe implementation.
-- Timestamps are deterministic educational simulation units. The implementation does not measure physical line-rate throughput, radio contention or realistic queueing; these belong to Phase 9.
-- Incident scoring checks network repair and written evidence, but does not semantically validate the learner's diagnosis text (future improvement).
-- Local browser storage is not an encrypted vault. Do not enter real passwords or sensitive data.
-- The additional 13 course modules and three-dimensional physical infrastructure are **not** implemented yet.
+## Documentation
 
-## Architecture
+- 📘 [USER MANUAL](docs/USER_MANUAL.md) · [Printable PDF](docs/USER_MANUAL.pdf): Git clone and install, every tab, guided labs, Patch, troubleshooting, project backups and FAQs.
+- 🛠️ [DEVELOPER MANUAL](docs/DEVELOPER_MANUAL.md) · [Printable PDF](docs/DEVELOPER_MANUAL.pdf): architecture, data model, engine trace, tests, limitations and GitHub release workflow.
+- 🧭 [MASTER BLUEPRINT](docs/NETVERSE_MASTER_BLUEPRINT.md): intended educational system and development phases.
+- 🔬 [ENGINE FIDELITY](docs/ENGINE_FIDELITY.md): exact rules and modeling limits.
+- ✅ [PHASES 9–14 ACCEPTANCE](docs/PHASES_9_14_ACCEPTANCE.md): Ubuntu/Firefox manual regression scenarios.
+- 📋 [FINAL RELEASE INSTALL](docs/FINAL_RELEASE_INSTALL.md): apply the manuals, commit, merge, publish and clean-clone acceptance.
+- 📋 [INSTALL EXTENDED RELEASE](docs/INSTALL_EXTENDED_RELEASE.md): earlier upgrade overlay procedure (for maintainers of older local copies).
 
-`src/engine/` is headless and contains validated topology actions, IP utilities, a state-based simulator and virtual terminal. UI components dispatch actions and display real event output from the engine. `src/labs/scenarios.ts` owns fixed incident fixtures and simple scoring. `src/learning/content.ts` owns lesson content. `src/utils/storage.ts` owns versioned local persistence.
+The Markdown manuals are the **canonical editable documentation**. PDF editions are provided for offline reading and printing.
 
-See `docs/ENGINE_FIDELITY.md` and `docs/PHASES_1-8_IMPLEMENTATION.md`.
+## Development and verification
+
+```bash
+npm run lint                 # Oxlint
+npm run build                # TypeScript + Vite
+npm test                     # Vitest
+bash scripts/verify_release.sh
+```
+
+The baseline suite has **62 tests** (1 toolchain, 34 engine, 27 extended). Test results are version-specific; run checks again after modifications. The UI is primarily in `src/App.tsx`; the headless IPv4 engine is in `src/engine`; standalone teaching models are in `src/features`.
+
+## What NETVERSE does *not* yet simulate
+
+The core models simplified connected IPv4 routes, one default gateway, ARP, ICMP, router transit and Ethernet switch paths. **It does not provide real DHCP/DNS/NAT, full TCP/IP packet stacks, production VLAN/IPv6 forwarding, live Wi-Fi/fibre physics or real packet capture.** Firewall/VLAN/TCP/IPv6 exercises are currently separate from the main packet engine. Patch is *not* an online LLM. The separate optional network namespace script requires Linux/sudo and authorization.
+
+Local browser storage is not encrypted secure storage; avoid real passwords or sensitive topology data. The project is suitable for isolated, educational experimentation, not live-network penetration or production configuration.
+
+## License and contributions
+
+No license is implied by this README. Add an explicit `LICENSE` file if you intend others to modify, redistribute or commercialize the project. Before contributing, run all quality gates, keep engine behavior deterministic and document any simplified networking assumptions. Make all changes in feature branches and merge only after acceptance.

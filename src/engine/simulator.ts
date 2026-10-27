@@ -13,7 +13,8 @@ export class Simulator {
   private cache = new Map<string, string>();
   private neighborTable: Record<string, string[]> = {};
   public events: NetworkEvent[] = [];
-  constructor(private project: NetworkProject) {}
+  private project: NetworkProject;
+  constructor(project: NetworkProject) { this.project = project; }
   private emit(type: NetworkEvent['type'], at: string, packetId: string, detail: string, reason?: string) {
     if (this.events.length >= 200) return;
     this.events.push({id: `event-${++this.seq}`, timeMs: Number(this.clock.toFixed(3)), type, at, packetId, detail, ...(reason ? {reason} : {})});
